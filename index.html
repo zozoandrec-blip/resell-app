@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resell iOS</title>
+<title>Resell iOS Pro</title>
 
 <style>
 :root{
-  --bg:#0b1220;
+  --bg:#020617;
   --card:rgba(255,255,255,.05);
   --border:rgba(255,255,255,.08);
   --text:#f1f5f9;
@@ -18,7 +18,7 @@
 
 body{
   margin:0;
-  font-family:-apple-system,BlinkMacSystemFont;
+  font-family:-apple-system;
   background:linear-gradient(180deg,#0b1220,#020617);
   color:var(--text);
 }
@@ -30,70 +30,76 @@ body{
   padding-bottom:100px;
 }
 
-/* HEADER */
 .header{
   font-size:22px;
   font-weight:700;
   margin-bottom:10px;
 }
 
-/* GLASS CARD */
 .card{
   background:var(--card);
   backdrop-filter:blur(30px);
   border-radius:26px;
   padding:16px;
   border:1px solid var(--border);
-  box-shadow:0 20px 40px rgba(0,0,0,.4);
 }
 
-/* BALANCE */
 .balance{
-  font-size:38px;
+  font-size:34px;
   font-weight:900;
   color:var(--green);
 }
 
-/* GRAPH */
-canvas{
+/* ADD BOX */
+.add-box{
+  margin-top:16px;
+  padding:16px;
+  border-radius:20px;
+  background:#0f172a;
+  border:1px solid rgba(255,255,255,.05);
+}
+
+.add-title{
+  font-weight:700;
+  margin-bottom:10px;
+}
+
+.input-group{
+  margin-bottom:10px;
+}
+
+.input-group label{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:4px;
+  display:block;
+}
+
+.input-group input{
   width:100%;
-  height:180px;
-  margin-top:14px;
-}
-
-/* FORM */
-.form{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:14px;
-}
-
-input{
   padding:14px;
-  border-radius:16px;
+  border-radius:14px;
   border:none;
-  background:rgba(255,255,255,.05);
+  background:#020617;
   color:white;
 }
 
-/* BUTTON */
+.row{
+  display:flex;
+  gap:10px;
+}
+
 button{
   width:100%;
-  margin-top:12px;
-  padding:16px;
+  margin-top:10px;
+  padding:14px;
   border:none;
-  border-radius:18px;
+  border-radius:16px;
   background:linear-gradient(90deg,#30d158,#22c55e);
   font-weight:700;
-  transition:.2s;
 }
 
-button:active{
-  transform:scale(.96);
-}
-
-/* OPERATIONS */
+/* operations */
 .op{
   display:flex;
   justify-content:space-between;
@@ -101,12 +107,6 @@ button:active{
   border-radius:20px;
   background:rgba(255,255,255,.04);
   margin-top:10px;
-  backdrop-filter:blur(10px);
-  transition:.2s;
-}
-
-.op:active{
-  transform:scale(.96);
 }
 
 .meta{
@@ -114,7 +114,7 @@ button:active{
   color:var(--muted);
 }
 
-/* NAVBAR */
+/* nav */
 .nav{
   position:fixed;
   bottom:20px;
@@ -139,9 +139,14 @@ button:active{
   color:var(--green);
 }
 
-/* TABS */
 .tab{display:none}
 .tab.active{display:block}
+
+canvas{
+  width:100%;
+  height:180px;
+  margin-top:10px;
+}
 </style>
 </head>
 
@@ -157,14 +162,33 @@ button:active{
 
 <div id="total" class="balance">0</div>
 
-<div class="form">
-<input id="name" placeholder="Товар">
-<input id="buy" type="number" placeholder="Покупка">
-<input id="sell" type="number" placeholder="Продажа">
-<input id="qty" type="number" placeholder="Кол-во">
-</div>
+<div class="add-box">
+  <div class="add-title">Новая сделка</div>
 
-<button onclick="addItem()">Добавить</button>
+  <div class="input-group">
+    <label>Товар</label>
+    <input id="name">
+  </div>
+
+  <div class="row">
+    <div class="input-group">
+      <label>Покупка</label>
+      <input id="buy" type="number">
+    </div>
+
+    <div class="input-group">
+      <label>Продажа</label>
+      <input id="sell" type="number">
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label>Количество</label>
+    <input id="qty" type="number" value="1">
+  </div>
+
+  <button onclick="addItem()">Добавить сделку</button>
+</div>
 
 <div id="ops"></div>
 
@@ -195,19 +219,6 @@ function format(n){
   return n.toLocaleString('ru-RU');
 }
 
-/* анимация денег */
-function animate(el,start,end){
-  let startTime=null;
-  function step(t){
-    if(!startTime) startTime=t;
-    let p=Math.min((t-startTime)/400,1);
-    let val=Math.floor(p*(end-start)+start);
-    el.innerText=format(val);
-    if(p<1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
 function render(){
   let total=0;
   let sum=0;
@@ -220,18 +231,18 @@ function render(){
     data.push(sum);
   });
 
-  animate(totalEl,0,total);
-  total2.innerText=format(total);
+  document.getElementById('total').innerText=format(total);
+  document.getElementById('total2').innerText=format(total);
 
   drawChart(data);
   renderOps();
 }
 
 function renderOps(){
+  const ops=document.getElementById('ops');
   ops.innerHTML='';
 
-  items.slice().reverse().forEach((i,index)=>{
-    let real=items.length-1-index;
+  items.slice().reverse().forEach(i=>{
     let p=(i.sell-i.buy)*i.qty;
 
     ops.innerHTML+=`
@@ -240,17 +251,19 @@ function renderOps(){
           <div>${i.name}</div>
           <div class="meta">${i.qty} • ${format(i.buy)} → ${format(i.sell)}</div>
         </div>
-        <div style="color:${p>=0?'#30d158':'#ff453a'}">${format(p)}</div>
+        <div style="color:${p>=0?'#30d158':'#ff453a'}">
+          ${format(p)}
+        </div>
       </div>
     `;
   });
 }
 
 function addItem(){
-  const name=nameInput.value;
-  const buy=parseFloat(buyInput.value);
-  const sell=parseFloat(sellInput.value);
-  const qty=parseInt(qtyInput.value);
+  const name=document.getElementById('name').value;
+  const buy=parseFloat(document.getElementById('buy').value);
+  const sell=parseFloat(document.getElementById('sell').value);
+  const qty=parseInt(document.getElementById('qty').value);
 
   if(!name||isNaN(buy)||isNaN(sell)||isNaN(qty)) return;
 
@@ -278,8 +291,6 @@ function drawChart(data){
     i?ctx.lineTo(x,y):ctx.moveTo(x,y);
   });
 
-  ctx.shadowColor="#30d158";
-  ctx.shadowBlur=15;
   ctx.strokeStyle="#30d158";
   ctx.lineWidth=3;
   ctx.stroke();
