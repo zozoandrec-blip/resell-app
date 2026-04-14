@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Перекуп — Доход</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+
+  <style>
+    body{margin:0;font-family:Arial;background:#0b1220;color:#fff;padding:12px}
+    .card{background:#111827;padding:12px;border-radius:12px}
+    input{padding:10px;margin:5px;width:45%}
+    button{padding:10px;margin:5px}
+    table{width:100%;margin-top:10px;border-collapse:collapse}
+    td,th{border-bottom:1px solid #333;padding:8px;text-align:center}
+  </style>
+</head>
+<body>
+
+<h2>Перекуп — доход</h2>
+
+<div class="card">
+  <input id="name" placeholder="Предмет">
+  <input id="buy" type="number" placeholder="Покупка">
+  <input id="sell" type="number" placeholder="Продажа">
+  <input id="qty" type="number" placeholder="Кол-во">
+  <button onclick="addItem()">Добавить</button>
+
+  <h3 id="total">Доход: 0</h3>
+
+  <table>
+    <thead>
+      <tr><th>Предмет</th><th>Покупка</th><th>Продажа</th><th>Кол-во</th><th>Доход</th></tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <button onclick="clearData()">Очистить</button>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+
+let items = JSON.parse(localStorage.getItem('items') || '[]');
+
+function render(){
+  let total=0;
+  const body=document.getElementById('tableBody');
+  body.innerHTML='';
+  items.forEach(i=>{
+    const p=(i.sell-i.buy)*i.qty;
+    total+=p;
+    body.innerHTML+=`<tr><td>${i.name}</td><td>${i.buy}</td><td>${i.sell}</td><td>${i.qty}</td><td>${p}</td></tr>`;
+  });
+  document.getElementById('total').innerText='Доход: '+total;
+}
+
+function addItem(){
+  const name=nameInput('name');
+  const buy=parseFloat(nameInput('buy'));
+  const sell=parseFloat(nameInput('sell'));
+  const qty=parseInt(nameInput('qty'));
+  if(!name||isNaN(buy)||isNaN(sell)||isNaN(qty)) return;
+  items.push({name,buy,sell,qty});
+  localStorage.setItem('items',JSON.stringify(items));
+  ['name','buy','sell','qty'].forEach(id=>document.getElementById(id).value='');
+  render();
+}
+
+function nameInput(id){return document.getElementById(id).value}
+
+function clearData(){
+  items=[];localStorage.removeItem('items');render();
+}
+
+render();
+</script>
+
+</body>
+</html>
