@@ -3,106 +3,159 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resell PRO+</title>
+<title>Resell iOS</title>
 
 <style>
 :root{
-  --bg:#020617;
-  --card:rgba(15,23,42,.7);
+  --bg:#0b1220;
+  --card:rgba(255,255,255,.05);
   --border:rgba(255,255,255,.08);
-  --text:#e5e7eb;
+  --text:#f1f5f9;
   --muted:#94a3b8;
-  --green:#22c55e;
-  --red:#ef4444;
+  --green:#30d158;
+  --red:#ff453a;
 }
 
 body{
   margin:0;
-  font-family:system-ui;
-  background:radial-gradient(circle at top,#111827,#020617);
+  font-family:-apple-system,BlinkMacSystemFont;
+  background:linear-gradient(180deg,#0b1220,#020617);
   color:var(--text);
 }
 
-.app{max-width:420px;margin:auto;padding:14px}
-
-.card{
-  background:var(--card);
-  backdrop-filter:blur(20px);
-  border-radius:22px;
-  padding:14px;
-  border:1px solid var(--border);
+.app{
+  max-width:420px;
+  margin:auto;
+  padding:16px;
+  padding-bottom:100px;
 }
 
-.big{
-  font-size:32px;
-  font-weight:800;
+/* HEADER */
+.header{
+  font-size:22px;
+  font-weight:700;
+  margin-bottom:10px;
+}
+
+/* GLASS CARD */
+.card{
+  background:var(--card);
+  backdrop-filter:blur(30px);
+  border-radius:26px;
+  padding:16px;
+  border:1px solid var(--border);
+  box-shadow:0 20px 40px rgba(0,0,0,.4);
+}
+
+/* BALANCE */
+.balance{
+  font-size:38px;
+  font-weight:900;
   color:var(--green);
 }
 
+/* GRAPH */
 canvas{
   width:100%;
   height:180px;
-  margin-top:12px;
+  margin-top:14px;
 }
 
+/* FORM */
 .form{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-top:12px;
+  gap:10px;
+  margin-top:14px;
 }
 
 input{
-  padding:12px;
-  border-radius:12px;
+  padding:14px;
+  border-radius:16px;
   border:none;
-  background:#020617;
+  background:rgba(255,255,255,.05);
   color:white;
 }
 
+/* BUTTON */
 button{
-  margin-top:10px;
-  padding:14px;
+  width:100%;
+  margin-top:12px;
+  padding:16px;
   border:none;
-  border-radius:14px;
-  background:linear-gradient(90deg,#22c55e,#16a34a);
-  color:#022c22;
+  border-radius:18px;
+  background:linear-gradient(90deg,#30d158,#22c55e);
   font-weight:700;
+  transition:.2s;
 }
 
-.operations{margin-top:14px}
+button:active{
+  transform:scale(.96);
+}
 
+/* OPERATIONS */
 .op{
   display:flex;
   justify-content:space-between;
-  align-items:center;
-  padding:12px;
-  border-radius:14px;
-  background:rgba(2,6,23,.6);
-  border:1px solid var(--border);
-  margin-bottom:8px;
+  padding:14px;
+  border-radius:20px;
+  background:rgba(255,255,255,.04);
+  margin-top:10px;
+  backdrop-filter:blur(10px);
+  transition:.2s;
 }
 
-.meta{font-size:12px;color:var(--muted)}
-
-.delete{
-  background:none;
-  border:none;
-  color:#ef4444;
-  font-size:16px;
+.op:active{
+  transform:scale(.96);
 }
+
+.meta{
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* NAVBAR */
+.nav{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:90%;
+  background:rgba(15,23,42,.7);
+  backdrop-filter:blur(25px);
+  border-radius:24px;
+  display:flex;
+  justify-content:space-around;
+  padding:10px;
+}
+
+.nav div{
+  text-align:center;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.nav .active{
+  color:var(--green);
+}
+
+/* TABS */
+.tab{display:none}
+.tab.active{display:block}
 </style>
 </head>
 
 <body>
 
 <div class="app">
+
+<div class="header">Resell</div>
+
+<!-- HOME -->
+<div id="home" class="tab active">
 <div class="card">
 
-<div>Баланс</div>
-<div id="total" class="big">0</div>
-
-<canvas id="chart"></canvas>
+<div id="total" class="balance">0</div>
 
 <div class="form">
 <input id="name" placeholder="Товар">
@@ -111,120 +164,133 @@ button{
 <input id="qty" type="number" placeholder="Кол-во">
 </div>
 
-<button onclick="addItem()">+ Добавить сделку</button>
+<button onclick="addItem()">Добавить</button>
 
-<div class="operations" id="ops"></div>
+<div id="ops"></div>
 
 </div>
+</div>
+
+<!-- ANALYTICS -->
+<div id="analytics" class="tab">
+<div class="card">
+
+<div id="total2" class="balance">0</div>
+<canvas id="chart"></canvas>
+
+</div>
+</div>
+
+</div>
+
+<div class="nav">
+<div onclick="switchTab('home',this)" class="active">🏠<br>Главная</div>
+<div onclick="switchTab('analytics',this)">📊<br>Аналитика</div>
 </div>
 
 <script>
 let items = JSON.parse(localStorage.getItem('items') || '[]');
 
-/* формат чисел */
-function format(num){
-  return num.toLocaleString('ru-RU');
+function format(n){
+  return n.toLocaleString('ru-RU');
+}
+
+/* анимация денег */
+function animate(el,start,end){
+  let startTime=null;
+  function step(t){
+    if(!startTime) startTime=t;
+    let p=Math.min((t-startTime)/400,1);
+    let val=Math.floor(p*(end-start)+start);
+    el.innerText=format(val);
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
 function render(){
   let total=0;
-  let cumulative=[];
   let sum=0;
+  let data=[];
 
   items.forEach(i=>{
-    const p=(i.sell-i.buy)*i.qty;
+    let p=(i.sell-i.buy)*i.qty;
     total+=p;
     sum+=p;
-    cumulative.push(sum);
+    data.push(sum);
   });
 
-  document.getElementById('total').innerText=format(total);
+  animate(totalEl,0,total);
+  total2.innerText=format(total);
 
-  drawChart(cumulative);
+  drawChart(data);
   renderOps();
 }
 
 function renderOps(){
-  const ops=document.getElementById('ops');
   ops.innerHTML='';
 
   items.slice().reverse().forEach((i,index)=>{
-    const realIndex = items.length-1-index;
-    const p=(i.sell-i.buy)*i.qty;
+    let real=items.length-1-index;
+    let p=(i.sell-i.buy)*i.qty;
 
     ops.innerHTML+=`
       <div class="op">
         <div>
           <div>${i.name}</div>
-          <div class="meta">${i.qty} шт • ${format(i.buy)} → ${format(i.sell)}</div>
+          <div class="meta">${i.qty} • ${format(i.buy)} → ${format(i.sell)}</div>
         </div>
-        <div>
-          <div style="color:${p>=0?'#22c55e':'#ef4444'}">
-            ${format(p)}
-          </div>
-          <button class="delete" onclick="removeItem(${realIndex})">✕</button>
-        </div>
+        <div style="color:${p>=0?'#30d158':'#ff453a'}">${format(p)}</div>
       </div>
     `;
   });
 }
 
 function addItem(){
-  const name=document.getElementById('name').value;
-  const buy=parseFloat(document.getElementById('buy').value);
-  const sell=parseFloat(document.getElementById('sell').value);
-  const qty=parseInt(document.getElementById('qty').value);
+  const name=nameInput.value;
+  const buy=parseFloat(buyInput.value);
+  const sell=parseFloat(sellInput.value);
+  const qty=parseInt(qtyInput.value);
 
   if(!name||isNaN(buy)||isNaN(sell)||isNaN(qty)) return;
 
   items.push({name,buy,sell,qty});
-  save();
-}
-
-function removeItem(index){
-  items.splice(index,1);
-  save();
-}
-
-function save(){
   localStorage.setItem('items',JSON.stringify(items));
-  ['name','buy','sell','qty'].forEach(id=>document.getElementById(id).value='');
+
+  document.querySelectorAll('input').forEach(i=>i.value='');
   render();
 }
 
-/* график */
 function drawChart(data){
   const c=document.getElementById('chart');
   const ctx=c.getContext('2d');
 
   ctx.clearRect(0,0,c.width,c.height);
-  if(data.length===0) return;
+  if(!data.length) return;
 
-  const max=Math.max(...data);
-  const step=c.width/(data.length-1 || 1);
+  let max=Math.max(...data);
+  let step=c.width/(data.length-1||1);
 
   ctx.beginPath();
-
   data.forEach((v,i)=>{
-    const x=i*step;
-    const y=c.height-(v/max)*c.height;
-    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    let x=i*step;
+    let y=c.height-(v/max)*c.height;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
   });
 
-  ctx.strokeStyle="#22c55e";
+  ctx.shadowColor="#30d158";
+  ctx.shadowBlur=15;
+  ctx.strokeStyle="#30d158";
   ctx.lineWidth=3;
   ctx.stroke();
+}
 
-  const gradient=ctx.createLinearGradient(0,0,0,c.height);
-  gradient.addColorStop(0,"rgba(34,197,94,0.5)");
-  gradient.addColorStop(1,"rgba(34,197,94,0)");
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 
-  ctx.lineTo(c.width,c.height);
-  ctx.lineTo(0,c.height);
-  ctx.closePath();
-
-  ctx.fillStyle=gradient;
-  ctx.fill();
+  document.querySelectorAll('.nav div').forEach(d=>d.classList.remove('active'));
+  el.classList.add('active');
 }
 
 render();
