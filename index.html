@@ -1,80 +1,227 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Перекуп — Доход</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resell PRO</title>
 
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
 
-  <style>
-    body{margin:0;font-family:Arial;background:#0b1220;color:#fff;padding:12px}
-    .card{background:#111827;padding:12px;border-radius:12px}
-    input{padding:10px;margin:5px;width:45%}
-    button{padding:10px;margin:5px}
-    table{width:100%;margin-top:10px;border-collapse:collapse}
-    td,th{border-bottom:1px solid #333;padding:8px;text-align:center}
-  </style>
+<style>
+:root{
+  --bg:#020617;
+  --card:rgba(15,23,42,.7);
+  --border:rgba(255,255,255,.08);
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --green:#22c55e;
+  --red:#ef4444;
+}
+
+body{
+  margin:0;
+  font-family:system-ui;
+  background:radial-gradient(circle at top,#111827,#020617);
+  color:var(--text);
+}
+
+.app{
+  max-width:420px;
+  margin:auto;
+  padding:14px;
+}
+
+/* CARD */
+.card{
+  background:var(--card);
+  backdrop-filter:blur(18px);
+  border-radius:22px;
+  padding:14px;
+  border:1px solid var(--border);
+  box-shadow:0 20px 40px rgba(0,0,0,.5);
+}
+
+/* BALANCE */
+.big{
+  font-size:32px;
+  font-weight:800;
+  color:var(--green);
+}
+
+/* GRAPH */
+canvas{
+  width:100%;
+  height:180px;
+  margin-top:12px;
+}
+
+/* FORM */
+.form{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:12px;
+}
+
+input{
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  background:#020617;
+  color:white;
+}
+
+button{
+  margin-top:10px;
+  padding:14px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(90deg,#22c55e,#16a34a);
+  color:#022c22;
+  font-weight:700;
+}
+
+/* OPERATIONS */
+.operations{
+  margin-top:14px;
+}
+
+.op{
+  display:flex;
+  justify-content:space-between;
+  padding:12px;
+  border-radius:14px;
+  background:rgba(2,6,23,.6);
+  border:1px solid var(--border);
+  margin-bottom:8px;
+}
+
+.name{
+  font-weight:600;
+}
+
+.meta{
+  font-size:12px;
+  color:var(--muted);
+}
+
+</style>
 </head>
+
 <body>
 
-<h2>Перекуп — доход</h2>
-
+<div class="app">
 <div class="card">
-  <input id="name" placeholder="Предмет">
-  <input id="buy" type="number" placeholder="Покупка">
-  <input id="sell" type="number" placeholder="Продажа">
-  <input id="qty" type="number" placeholder="Кол-во">
-  <button onclick="addItem()">Добавить</button>
 
-  <h3 id="total">Доход: 0</h3>
+<div>Баланс</div>
+<div id="total" class="big">0</div>
 
-  <table>
-    <thead>
-      <tr><th>Предмет</th><th>Покупка</th><th>Продажа</th><th>Кол-во</th><th>Доход</th></tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+<canvas id="chart"></canvas>
 
-  <button onclick="clearData()">Очистить</button>
+<div class="form">
+<input id="name" placeholder="Товар">
+<input id="buy" type="number" placeholder="Покупка">
+<input id="sell" type="number" placeholder="Продажа">
+<input id="qty" type="number" placeholder="Кол-во">
+</div>
+
+<button onclick="addItem()">+ Добавить сделку</button>
+
+<div class="operations" id="ops"></div>
+
+</div>
 </div>
 
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
-}
-
 let items = JSON.parse(localStorage.getItem('items') || '[]');
 
 function render(){
   let total=0;
-  const body=document.getElementById('tableBody');
-  body.innerHTML='';
-  items.forEach(i=>{
+  const profits = items.map(i=>{
     const p=(i.sell-i.buy)*i.qty;
     total+=p;
-    body.innerHTML+=`<tr><td>${i.name}</td><td>${i.buy}</td><td>${i.sell}</td><td>${i.qty}</td><td>${p}</td></tr>`;
+    return p;
   });
-  document.getElementById('total').innerText='Доход: '+total;
+
+  document.getElementById('total').innerText=total;
+
+  drawChart(profits);
+  renderOps();
+}
+
+function renderOps(){
+  const ops=document.getElementById('ops');
+  ops.innerHTML='';
+
+  items.slice().reverse().forEach(i=>{
+    const p=(i.sell-i.buy)*i.qty;
+
+    ops.innerHTML+=`
+      <div class="op">
+        <div>
+          <div class="name">${i.name}</div>
+          <div class="meta">${i.qty} шт • ${i.buy} → ${i.sell}</div>
+        </div>
+        <div style="color:${p>=0?'#22c55e':'#ef4444'}">
+          ${p}
+        </div>
+      </div>
+    `;
+  });
 }
 
 function addItem(){
-  const name=nameInput('name');
-  const buy=parseFloat(nameInput('buy'));
-  const sell=parseFloat(nameInput('sell'));
-  const qty=parseInt(nameInput('qty'));
+  const name=document.getElementById('name').value;
+  const buy=parseFloat(document.getElementById('buy').value);
+  const sell=parseFloat(document.getElementById('sell').value);
+  const qty=parseInt(document.getElementById('qty').value);
+
   if(!name||isNaN(buy)||isNaN(sell)||isNaN(qty)) return;
+
   items.push({name,buy,sell,qty});
   localStorage.setItem('items',JSON.stringify(items));
+
   ['name','buy','sell','qty'].forEach(id=>document.getElementById(id).value='');
+
   render();
 }
 
-function nameInput(id){return document.getElementById(id).value}
+/* BANK STYLE GRAPH */
+function drawChart(data){
+  const c=document.getElementById('chart');
+  const ctx=c.getContext('2d');
 
-function clearData(){
-  items=[];localStorage.removeItem('items');render();
+  ctx.clearRect(0,0,c.width,c.height);
+
+  if(data.length===0) return;
+
+  const max=Math.max(...data);
+  const step=c.width/(data.length-1 || 1);
+
+  ctx.beginPath();
+
+  data.forEach((v,i)=>{
+    const x=i*step;
+    const y=c.height-(v/max)*c.height;
+
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+
+  ctx.strokeStyle="#22c55e";
+  ctx.lineWidth=3;
+  ctx.stroke();
+
+  const gradient=ctx.createLinearGradient(0,0,0,c.height);
+  gradient.addColorStop(0,"rgba(34,197,94,0.5)");
+  gradient.addColorStop(1,"rgba(34,197,94,0)");
+
+  ctx.lineTo(c.width,c.height);
+  ctx.lineTo(0,c.height);
+  ctx.closePath();
+
+  ctx.fillStyle=gradient;
+  ctx.fill();
 }
 
 render();
