@@ -3,10 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resell PRO</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f172a">
+<title>Resell PRO+</title>
 
 <style>
 :root{
@@ -26,37 +23,28 @@ body{
   color:var(--text);
 }
 
-.app{
-  max-width:420px;
-  margin:auto;
-  padding:14px;
-}
+.app{max-width:420px;margin:auto;padding:14px}
 
-/* CARD */
 .card{
   background:var(--card);
-  backdrop-filter:blur(18px);
+  backdrop-filter:blur(20px);
   border-radius:22px;
   padding:14px;
   border:1px solid var(--border);
-  box-shadow:0 20px 40px rgba(0,0,0,.5);
 }
 
-/* BALANCE */
 .big{
   font-size:32px;
   font-weight:800;
   color:var(--green);
 }
 
-/* GRAPH */
 canvas{
   width:100%;
   height:180px;
   margin-top:12px;
 }
 
-/* FORM */
 .form{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -82,14 +70,12 @@ button{
   font-weight:700;
 }
 
-/* OPERATIONS */
-.operations{
-  margin-top:14px;
-}
+.operations{margin-top:14px}
 
 .op{
   display:flex;
   justify-content:space-between;
+  align-items:center;
   padding:12px;
   border-radius:14px;
   background:rgba(2,6,23,.6);
@@ -97,15 +83,14 @@ button{
   margin-bottom:8px;
 }
 
-.name{
-  font-weight:600;
-}
+.meta{font-size:12px;color:var(--muted)}
 
-.meta{
-  font-size:12px;
-  color:var(--muted);
+.delete{
+  background:none;
+  border:none;
+  color:#ef4444;
+  font-size:16px;
 }
-
 </style>
 </head>
 
@@ -136,17 +121,26 @@ button{
 <script>
 let items = JSON.parse(localStorage.getItem('items') || '[]');
 
+/* формат чисел */
+function format(num){
+  return num.toLocaleString('ru-RU');
+}
+
 function render(){
   let total=0;
-  const profits = items.map(i=>{
+  let cumulative=[];
+  let sum=0;
+
+  items.forEach(i=>{
     const p=(i.sell-i.buy)*i.qty;
     total+=p;
-    return p;
+    sum+=p;
+    cumulative.push(sum);
   });
 
-  document.getElementById('total').innerText=total;
+  document.getElementById('total').innerText=format(total);
 
-  drawChart(profits);
+  drawChart(cumulative);
   renderOps();
 }
 
@@ -154,17 +148,21 @@ function renderOps(){
   const ops=document.getElementById('ops');
   ops.innerHTML='';
 
-  items.slice().reverse().forEach(i=>{
+  items.slice().reverse().forEach((i,index)=>{
+    const realIndex = items.length-1-index;
     const p=(i.sell-i.buy)*i.qty;
 
     ops.innerHTML+=`
       <div class="op">
         <div>
-          <div class="name">${i.name}</div>
-          <div class="meta">${i.qty} шт • ${i.buy} → ${i.sell}</div>
+          <div>${i.name}</div>
+          <div class="meta">${i.qty} шт • ${format(i.buy)} → ${format(i.sell)}</div>
         </div>
-        <div style="color:${p>=0?'#22c55e':'#ef4444'}">
-          ${p}
+        <div>
+          <div style="color:${p>=0?'#22c55e':'#ef4444'}">
+            ${format(p)}
+          </div>
+          <button class="delete" onclick="removeItem(${realIndex})">✕</button>
         </div>
       </div>
     `;
@@ -180,20 +178,26 @@ function addItem(){
   if(!name||isNaN(buy)||isNaN(sell)||isNaN(qty)) return;
 
   items.push({name,buy,sell,qty});
+  save();
+}
+
+function removeItem(index){
+  items.splice(index,1);
+  save();
+}
+
+function save(){
   localStorage.setItem('items',JSON.stringify(items));
-
   ['name','buy','sell','qty'].forEach(id=>document.getElementById(id).value='');
-
   render();
 }
 
-/* BANK STYLE GRAPH */
+/* график */
 function drawChart(data){
   const c=document.getElementById('chart');
   const ctx=c.getContext('2d');
 
   ctx.clearRect(0,0,c.width,c.height);
-
   if(data.length===0) return;
 
   const max=Math.max(...data);
@@ -204,7 +208,6 @@ function drawChart(data){
   data.forEach((v,i)=>{
     const x=i*step;
     const y=c.height-(v/max)*c.height;
-
     i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
   });
 
